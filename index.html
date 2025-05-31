@@ -1,15 +1,349 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    
-    <!-- 双重跳转机制确保可靠性 -->
-    <meta http-equiv="refresh" content="0; url=https://apyun.dpdns.org">
-    <script type="text/javascript">
-        // 优先使用replace方法避免历史记录残留
-        window.location.replace("https://apyun.dpdns.org");
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>访客IP信息</title>
+  
 </head>
-<body style="display:none">
+<body>
+    <style>
+        .card-demo {
+          font-family: sans-serif;
+          color: #fff;
+          background: transparent;
+        }
+        .card-demo .info-box {
+          background: #222;
+          padding: 16px 18px;
+          border-radius: 8px;
+          box-shadow: 0 1px 6px #0006;
+          max-width: 100%;
+          margin: 0 auto;
+          font-size: 15px;
+          box-sizing: border-box;
+        }
+        .card-demo .info-label { color: #aaa; margin-top: 10px; font-size: 13px; }
+        .card-demo .info-value { word-break: break-all; margin-bottom: 10px; color: #fff; font-size: 15px; }
+        .card-demo .info-address { color: #6cf; font-size: 13px; margin-bottom: 8px; }
+        .card-demo .ua-label { color: #aaa; margin-top: 18px; font-size: 13px; }
+        .card-demo .ua-value { color: #fff; font-size: 13px; word-break: break-all; }
+        .card-demo .trace-label { color: #aaa; margin-top: 18px; font-size: 13px; }
+        .card-demo .trace-value { color: #fff; font-size: 13px; word-break: break-all; }
+        .card-demo .ip-node-value {
+          word-break: break-all;
+          white-space: normal;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: block;
+          cursor: pointer;
+        }
+        .card-demo .speed-value { font-weight: bold; font-size: 16px; margin-top: 2px; }
+        .card-demo .speed-green { color: #4caf50; }
+        .card-demo .speed-orange { color: #ff9800; }
+        .card-demo .speed-red { color: #f44336; }
+        .card-demo .speed-gray { color: #aaa; }
+      </style>
+  <div class="card-demo">
+    <div class="info-box">
+      <div class="info-label">当前访问优先（IPv4/IPv6）：</div>
+      <div class="info-value" id="ip-priority">检测中...</div>
+      <div class="info-label">IPv4：</div>
+      <div class="info-value" id="ip-v4">检测中...</div>
+      <div class="info-address" id="ip-v4-addr"></div>
+      <div class="trace-label">IPv4溯源：</div>
+      <div class="trace-value" id="ip-trace">检测中...</div>
+      <div class="trace-label">WebRTC泄露检测：</div>
+      <div class="trace-value" id="webrtc-leak">检测中...</div>
+      <div class="info-label">IPv6：</div>
+      <div class="info-value" id="ip-v6">检测中...</div>
+      <div class="info-address" id="ip-v6-addr"></div>
+      <div class="ua-label">操作系统：</div>
+      <div class="ua-value" id="os-type">检测中...</div>
+      <div class="ua-label">浏览器UA：</div>
+      <div class="ua-value" id="ua"></div>
+      <div class="trace-label">常用网站测速：</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+        <div style="flex:1;min-width:80px;text-align:center;">
+          <div style="color:#aaa;">百度</div>
+          <div id="speed-baidu" class="speed-value">测速中...</div>
+        </div>
+        <div style="flex:1;min-width:80px;text-align:center;">
+          <div style="color:#aaa;">Github</div>
+          <div id="speed-github" class="speed-value">测速中...</div>
+        </div>
+        <div style="flex:1;min-width:80px;text-align:center;">
+          <div style="color:#aaa;">Cloudflare</div>
+          <div id="speed-cloudflare" class="speed-value">测速中...</div>
+        </div>
+        <div style="flex:1;min-width:80px;text-align:center;">
+          <div style="color:#aaa;">Google</div>
+          <div id="speed-google" class="speed-value">测速中...</div>
+        </div>
+      </div>
+      <div class="trace-label">节点IP测试：</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+        <div style="flex:1;min-width:120px;text-align:center;">
+          <div style="color:#aaa;">国内 IPv4</div>
+          <div id="node-itdog-v4-cm" class="ip-node-value">检测中...</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center;">
+          <div style="color:#aaa;">国内 IPv6</div>
+          <div id="node-itdog-v6-cm" class="ip-node-value">检测中...</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+        <div style="flex:1;min-width:120px;text-align:center;">
+          <div style="color:#aaa;">港澳台 IPv4</div>
+          <div id="node-itdog-v4-over" class="ip-node-value">检测中...</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center;">
+          <div style="color:#aaa;">港澳台 IPv6</div>
+          <div id="node-itdog-v6-over" class="ip-node-value">检测中...</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center;">
+          <div style="color:#aaa;">海外 IPv4</div>
+          <div id="node-lvhai-v4" class="ip-node-value">检测中...</div>
+        </div>
+        <div style="flex:1;min-width:120px;text-align:center;">
+          <div style="color:#aaa;">海外 IPv6</div>
+          <div id="node-lvhai-v6" class="ip-node-value">检测中...</div>
+        </div>
+      </div>
+      <div style="text-align:center;color:#888;font-size:13px;margin-top:18px;">
+          Powered By <a href="https://link.me/acofork" target="_blank" style="color:#6cf;text-decoration:none;">AcoFork</a>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('ua').textContent = navigator.userAgent;
+    // 访问优先
+    fetch('https://test.itdog.cn/')
+      .then(r => r.json())
+      .then(data => {
+        let version = data.version;
+        if (version && version.toUpperCase() === 'IPV6') version = 'IPv6';
+        if (version && version.toUpperCase() === 'IPV4') version = 'IPv4';
+        document.getElementById('ip-priority').textContent = version || '未知';
+      })
+      .catch(() => {
+        document.getElementById('ip-priority').textContent = '获取失败';
+      });
+    let ipv4FromItdog = '';
+    // IPv4
+    fetch('https://ipv4_ct.itdog.cn/')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('ip-v4').textContent = data.ip || '无';
+        document.getElementById('ip-v4-addr').textContent = data.address || '';
+        ipv4FromItdog = data.ip || '';
+        // 自动溯源
+        if(data.ip) {
+          fetch('https://ipsy.072103.xyz/api/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip: data.ip })
+          })
+          .then(r => r.json())
+          .then(trace => {
+            if(trace.error) {
+              document.getElementById('ip-trace').textContent = '溯源失败：' + trace.error;
+            } else if(trace.location) {
+              let info = [];
+              if(trace.location.country) info.push('国家: ' + trace.location.country);
+              if(trace.location.province) info.push('省份: ' + trace.location.province);
+              if(trace.location.city) info.push('城市: ' + trace.location.city);
+              if(trace.location.district) info.push('区县: ' + trace.location.district);
+              if(trace.location.detail) info.push('详细: ' + trace.location.detail);
+              if(trace.location.lat && trace.location.lng) info.push('经纬度: ' + trace.location.lat + ',' + trace.location.lng);
+              document.getElementById('ip-trace').textContent = info.join('，');
+            } else {
+              document.getElementById('ip-trace').textContent = '无溯源数据';
+            }
+          })
+          .catch(() => {
+            document.getElementById('ip-trace').textContent = '溯源请求失败';
+          });
+        } else {
+          document.getElementById('ip-trace').textContent = '无IP，无法溯源';
+        }
+        // WebRTC泄露检测
+        detectWebRTCLeak(data.ip);
+      })
+      .catch(() => {
+        document.getElementById('ip-v4').textContent = '获取失败';
+        document.getElementById('ip-trace').textContent = '无法溯源';
+        document.getElementById('webrtc-leak').textContent = '无法检测';
+      });
+    // IPv6
+    fetch('https://ipv6.itdog.cn/')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('ip-v6').textContent = data.ip || '无';
+        document.getElementById('ip-v6-addr').textContent = data.address || '';
+      })
+      .catch(() => {
+        document.getElementById('ip-v6').textContent = '获取失败';
+      });
+    // 操作系统识别（只区分能100%辨别的主流系统）
+    function detectOS(ua) {
+      ua = ua.toLowerCase();
+      if (/windows nt/.test(ua)) return 'Windows';
+      if (/android/.test(ua)) return 'Android';
+      if (/iphone|ipad|ipod/.test(ua)) return 'iOS';
+      if (/linux/.test(ua) && !/android/.test(ua)) return 'Linux';
+      if (/macintosh|mac os x/.test(ua)) return 'Mac OS';
+      return '未知系统';
+    }
+    document.getElementById('os-type').textContent = detectOS(navigator.userAgent);
+    // WebRTC泄露检测
+    function detectWebRTCLeak(ipv4) {
+      let foundLeak = false;
+      let stunServer = { urls: 'stun:stun.l.google.com:19302' };
+      let rtc = new RTCPeerConnection({ iceServers: [stunServer] });
+      rtc.createDataChannel('');
+      rtc.createOffer().then(offerDesc => rtc.setLocalDescription(offerDesc));
+      rtc.onicecandidate = function(evt) {
+        if (evt && evt.candidate && evt.candidate.candidate) {
+          let candidate = evt.candidate.candidate;
+          let ipMatch = candidate.match(/([0-9]{1,3}(?:\.[0-9]{1,3}){3})/);
+          if (ipMatch) {
+            let ip = ipMatch[1];
+            // 只检测公网IP（忽略内网）
+            if (ip !== ipv4 && !isPrivateIP(ip)) {
+              foundLeak = true;
+              document.getElementById('webrtc-leak').textContent = '发现WebRTC泄露：' + ip + '，查询中...';
+              // 查询GeoIP
+              fetch('https://ipsy.072103.xyz/api/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip })
+              })
+              .then(r => r.json())
+              .then(trace => {
+                if(trace.location) {
+                  let info = [];
+                  if(trace.location.country) info.push('国家: ' + trace.location.country);
+                  if(trace.location.province) info.push('省份: ' + trace.location.province);
+                  if(trace.location.city) info.push('城市: ' + trace.location.city);
+                  if(trace.location.district) info.push('区县: ' + trace.location.district);
+                  document.getElementById('webrtc-leak').textContent = '发现WebRTC泄露：' + ip + '（' + info.join('，') + '）';
+                } else {
+                  document.getElementById('webrtc-leak').textContent = '发现WebRTC泄露：' + ip + '（无地理信息）';
+                }
+              })
+              .catch(() => {
+                document.getElementById('webrtc-leak').textContent = '发现WebRTC泄露：' + ip + '（查询失败）';
+              });
+            }
+          }
+        } else if (!foundLeak) {
+          document.getElementById('webrtc-leak').textContent = '未发现WebRTC泄露';
+        }
+      };
+    }
+    // 判断是否为内网IP
+    function isPrivateIP(ip) {
+      return /^10\./.test(ip) || /^192\.168\./.test(ip) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip) || /^127\./.test(ip);
+    }
+    // 常用网站测速
+    function testSpeed(url, domId) {
+      const el = document.getElementById(domId);
+      const img = new Image();
+      const start = Date.now();
+      let finished = false; // 标志位
+
+      img.src = url + '/favicon.ico?_t=' + Math.random();
+      img.onload = img.onerror = function() {
+        if (finished) return; // 如果已经超时，不再处理
+        const ms = Date.now() - start;
+        let cls = '';
+        if (ms < 200) cls = 'speed-green';
+        else if (ms < 1000) cls = 'speed-orange';
+        else cls = 'speed-red';
+        el.textContent = ms + ' ms';
+        el.className = 'speed-value ' + cls;
+        finished = true;
+      };
+      setTimeout(() => {
+        if (!finished) {
+          el.textContent = '超时';
+          el.className = 'speed-value speed-gray';
+          finished = true;
+        }
+      }, 5000);
+    }
+    testSpeed('https://www.baidu.com', 'speed-baidu');
+    testSpeed('https://github.com', 'speed-github');
+    testSpeed('https://cloudflare.com', 'speed-cloudflare');
+    testSpeed('https://www.google.com', 'speed-google');
+    // itdog 海外IPv4
+    fetch('https://ipv4-overseas.itdog.plus/')
+      .then(r => r.json())
+      .then(data => {
+        let ip = data.ip || '获取失败';
+        let loc = data.address || '';
+        document.getElementById('node-itdog-v4-over').textContent = ip + (loc ? ' ' + loc : '');
+      })
+      .catch(() => {
+        document.getElementById('node-itdog-v4-over').textContent = '获取失败';
+      });
+    // itdog 海外IPv6
+    fetch('https://ipv6-overseas.itdog.plus/')
+      .then(r => r.json())
+      .then(data => {
+        let ip = data.ip || '获取失败';
+        let loc = data.address || '';
+        document.getElementById('node-itdog-v6-over').textContent = ip + (loc ? ' ' + loc : '');
+      })
+      .catch(() => {
+        document.getElementById('node-itdog-v6-over').textContent = '获取失败';
+      });
+    // itdog 移动IPv4
+    fetch('https://ipv4_cm.itdog.cn/')
+      .then(r => r.json())
+      .then(data => {
+        let ip = data.ip || '获取失败';
+        let loc = data.address || '';
+        document.getElementById('node-itdog-v4-cm').textContent = ip + (loc ? ' ' + loc : '');
+      })
+      .catch(() => {
+        document.getElementById('node-itdog-v4-cm').textContent = '获取失败';
+      });
+    // itdog 移动IPv6
+    fetch('https://ipv6_cm.itdog.cn/')
+      .then(r => r.json())
+      .then(data => {
+        let ip = data.ip || '获取失败';
+        let loc = data.address || '';
+        document.getElementById('node-itdog-v6-cm').textContent = ip + (loc ? ' ' + loc : '');
+      })
+      .catch(() => {
+        document.getElementById('node-itdog-v6-cm').textContent = '获取失败';
+      });
+    // lvhai IPv4
+    fetch('https://ipv4.lvhai.org/')
+      .then(r => r.json())
+      .then(data => {
+        let ip = data.ip || '获取失败';
+        let loc = data.address || '';
+        document.getElementById('node-lvhai-v4').textContent = ip + (loc ? ' ' + loc : '');
+      })
+      .catch(() => {
+        document.getElementById('node-lvhai-v4').textContent = '获取失败';
+      });
+    // lvhai IPv6
+    fetch('https://ipv6.lvhai.org/')
+      .then(r => r.json())
+      .then(data => {
+        let ip = data.ip || '获取失败';
+        let loc = data.address || '';
+        document.getElementById('node-lvhai-v6').textContent = ip + (loc ? ' ' + loc : '');
+      })
+      .catch(() => {
+        document.getElementById('node-lvhai-v6').textContent = '获取失败';
+      });
+  </script>
 </body>
 </html>
